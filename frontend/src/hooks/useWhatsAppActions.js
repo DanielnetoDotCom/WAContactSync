@@ -45,7 +45,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
   
   const loadContacts = async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
   
     try {
       setLoading(true);
