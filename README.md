@@ -1,109 +1,72 @@
-# 🧱 Full Stack Starter Template — Vite + Tailwind + Express
+- **Project Description:**  
+  This project is about synchronizing WhatsApp contacts and interaction metadata into an SQL database. The goal is to provide a clean and sortable interface to visualize a network of contacts. The application operates on a per-session basis and uses QR Code authentication with WhatsApp Web.
 
-This is a reusable full-stack starter project using:
+- **Features:**  
+  - Synchronizes WhatsApp contacts and interaction metadata.  
+  - Displays a QR Code for WhatsApp Web authentication.  
+  - Temporarily stores data in an SQLite database.  
+  - Provides a user interface to view contacts sorted by the date of the last interaction.
 
-- **Frontend**: React + Vite + Tailwind CSS  
-- **Backend**: Express (Node.js)  
-- **Extras**: One script to scan all `.js/.jsx/.ts/.tsx` files across frontend and backend
+- **Project Architecture:**  
+  - **Frontend:**  
+    - Framework: React (initialized with Vite).  
+    - Styling: Tailwind CSS.  
+    - Features include displaying the QR Code, a synchronization button, and a contacts table.  
+    - Communicates with the backend via Axios.
+  - **Backend:**  
+    - Runtime: Node.js.  
+    - Framework: Express.js.  
+    - Exposes REST APIs for contact synchronization and retrieval.  
+    - Integrates with WhatsApp using whatsapp-web.js.
+  - **WhatsApp Integration:**  
+    - Main Library: whatsapp-web.js.  
+    - Fallback Option: Puppeteer, if necessary.
+  - **Database:**  
+    - Engine: SQLite.  
+    - Mode: Persistent storage (with the option to switch to in-memory mode for a fully ephemeral experience).
 
----
+- **User Flow:**  
+  - When the application starts, a new session is initiated.  
+  - The user clicks the "Sync WhatsApp" button.  
+  - A QR Code is displayed for WhatsApp Web login.  
+  - After successful authentication, the app extracts contact data (name, phone number, date of last interaction, and an approximate message count) and saves it into the database.  
+  - The interface updates automatically to display the sorted contacts table.
 
-## 📁 Project Structure
+- **Execution Plan and Time Estimates:**  
+  - Environment Setup (React with Vite, Tailwind CSS, Express.js, SQLite): **0.5 day**.  
+  - WhatsApp Integration (setting up whatsapp-web.js for authentication and data extraction): **2 days**.  
+  - Data Insertion Logic: **1 day**.  
+  - API Development: **1 day**.  
+  - Frontend Implementation (synchronization button and table view): **1 day**.  
+  - Testing and Refinement (including error handling and loading states): **1.5 days**.  
+  - **Total Estimated Time:** **7 days**.
 
-```
-my-project/
-├── frontend/      # React app with Vite and Tailwind
-├── backend/       # Express server
-├── scan-js-files.js  # Utility to list all JS/TS files with content
-├── js-files.txt      # Output file from scan script
-└── README.md
-```
+- **Risks and Considerations:**  
+  - The session token from whatsapp-web.js may expire, requiring re-authentication via QR Code.  
+  - The message count might be limited or not fully accurate.  
+  - Data is maintained on a per-session basis, with no persistence across sessions, as specified by design.
 
----
+- **Project Dependencies:**  
+  - **Backend:**  
+    - express  
+    - whatsapp-web.js  
+    - sqlite3  
+  - **Frontend:**  
+    - react (via Vite)  
+    - tailwindcss  
+    - axios
 
-## 🚀 Getting Started
+- **Installation Instructions:**  
+  1. Clone the repository.  
+  2. In the project directory, install the backend dependencies using `npm install` or `yarn install` in the appropriate folder.  
+  3. Configure the SQLite database by setting up the schema as needed (the `contacts.db` file will be created automatically in persistent mode).  
+  4. Install the frontend dependencies and start the project with `npm run dev` or `yarn dev`.
 
-### 1. Clone this repo
+- **Usage Instructions:**  
+  1. Start both the backend server and the frontend application.  
+  2. Access the application via a web browser.  
+  3. Click the "Sync WhatsApp" button to initiate the QR Code authentication flow.  
+  4. Upon successful authentication, the application will fetch and display an updated contacts table.
 
-You can use this repo as a template by clicking **"Use this template"** on GitHub.
-
-Or clone manually:
-
-```bash
-git clone https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
-cd YOUR-REPO-NAME
-```
-
-### 2. Install dependencies
-
-#### Frontend
-
-```bash
-cd frontend
-npm install
-```
-
-#### Backend
-
-```bash
-cd ../backend
-npm install
-```
-
-### 3. Run the project
-
-#### Start Backend
-
-```bash
-cd backend
-npm run dev
-```
-
-#### Start Frontend
-
-```bash
-cd ../frontend
-npm run dev
-```
-
-## 🧪 File Scanner
-
-This project includes a utility script to scan all JavaScript/TypeScript files across both frontend and backend and output their contents into a single `.txt` file.
-
-### Run the script:
-
-```bash
-node scan-js-files.js
-```
-
-### Output:
-
-A file `js-files.txt` will be created in the root, with:
-
-- Relative file paths
-- File contents
-- Ignores `node_modules` automatically
-
-## 🔄 Reusing This Template
-
-To use this setup in future projects:
-
-- Mark this repo as a **template** in GitHub settings
-- Click **"Use this template"** to create a new project
-- Alternatively, use [`degit`](https://github.com/Rich-Harris/degit):
-
-```bash
-npx degit your-username/your-repo-name my-new-app
-```
-
-## 📌 Notes
-
-- No sensitive data should be stored here
-- Keep the structure clean and minimal
-- Adapt as needed per project
-
-## 🧑‍💻 Author
-
-Daniel de Oliveira Santos Neto  
-[Your GitHub Profile](https://github.com/YOUR-USERNAME)
-
+- **License:**  
+  The project is licensed under the MIT License, permitting broad use and modification under its terms.
