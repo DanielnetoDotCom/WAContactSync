@@ -23,7 +23,9 @@ This project was developed by Daniel Neto as a full-stack demonstration using mo
 
 ## 🖼️ Preview
 
-![screenshot](https://your-screenshot-url-if-available.com)
+![chrome-capture-2025-4-9](https://github.com/user-attachments/assets/4d192def-7da8-4dc8-a8fa-da20e7da4980)
+
+![chrome-capture-2025-4-9](https://github.com/user-attachments/assets/96b0aac9-5e69-4ddd-9950-95e2673333d3)
 
 ---
 
