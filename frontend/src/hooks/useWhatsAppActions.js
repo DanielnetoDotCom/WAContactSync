@@ -8,6 +8,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
   const syncWhatsApp = async () => {
     try {
       setLoading(true);
+  
       const { data } = await axios.get('/whatsapp/status');
   
       if (data.ready) {
@@ -19,13 +20,12 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
         });
   
         if (!confirm.isConfirmed) return;
-  
-        await axios.post('/whatsapp/restart'); // <-- forçar reinicialização
-        setContacts([]);
-        setStatus('initial');
       }
   
-      setQrCode(null); // frontend limpa o QR anterior
+      // Reinicia sempre, mesmo se não estiver pronto
+      await axios.post('/whatsapp/restart');
+      setContacts([]);
+      setQrCode(null);
       setStatus('waiting-qr');
   
       Swal.fire({
@@ -42,6 +42,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       setLoading(false);
     }
   };
+  
   
   const loadContacts = async () => {
     const controller = new AbortController();
