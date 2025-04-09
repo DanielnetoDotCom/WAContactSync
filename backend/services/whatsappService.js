@@ -30,6 +30,9 @@ let clientInstance = null;
 let latestQR = null;
 let isClientReady = false;
 
+/**
+ * Initializes a new WhatsApp client
+ */
 function createClient() {
   const client = new Client({
     authStrategy: new LocalAuth(),
@@ -38,20 +41,18 @@ function createClient() {
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
   });
-  
 
   client.on('qr', async (qr) => {
     latestQR = await qrcode.toDataURL(qr);
     console.log('🔄 QR code generated');
     broadcastEvent('qr', { qr: latestQR });
   });
-  
+
   client.on('ready', () => {
     isClientReady = true;
     console.log('✅ WhatsApp client is ready!');
     broadcastEvent('ready', {});
   });
-  
 
   client.on('authenticated', () => {
     console.log('🔐 Authenticated with WhatsApp.');
@@ -66,6 +67,9 @@ function createClient() {
   clientInstance = client;
 }
 
+/**
+ * Destroys and reinitializes the WhatsApp client
+ */
 async function reinitializeClient() {
   console.log('♻️ Reinitializing WhatsApp client...');
   isClientReady = false;
@@ -73,7 +77,7 @@ async function reinitializeClient() {
 
   if (clientInstance) {
     try {
-      await clientInstance.destroy(); // important!
+      await clientInstance.destroy();
       console.log('🛑 Previous client destroyed.');
     } catch (err) {
       console.warn('⚠️ Error destroying client:', err.message);
@@ -89,27 +93,42 @@ async function reinitializeClient() {
     console.error('Failed to delete session folder:', err.message);
   }
 
-  createClient();
+  // Delay before recreating the client to ensure Puppeteer is released
+  setTimeout(() => {
+    createClient();
+  }, 1500); // 1.5 seconds
 }
 
-
+/**
+ * Gets the current WhatsApp client instance
+ */
 function getInstance() {
   return clientInstance;
 }
 
+/**
+ * Gets the latest generated QR code
+ */
 function getLatestQR() {
   return latestQR;
 }
 
+/**
+ * Returns true if client is ready
+ */
 function getClientStatus() {
   return isClientReady;
 }
 
+/**
+ * Allows updating the internal ready flag
+ */
 function setClientReady(state) {
   isClientReady = state;
 }
 
-createClient(); // start on load
+// Initialize client on module load
+createClient();
 
 export {
   getInstance,
