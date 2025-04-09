@@ -70,36 +70,40 @@ export async function syncContacts(req, res = null) {
     if (res) return res.status(503).json({ error: message });
     else throw new Error(message);
   }
+  try {
+    const db = await getDB();
+    const client = getClient();
+    const contacts = await client.getContacts();
 
-  const db = await getDB();
-  const client = getClient();
-  const contacts = await client.getContacts();
+    await db.exec('DELETE FROM contacts');
 
-  await db.exec('DELETE FROM contacts');
+    for (const contact of contacts) {
+      if (!contact.isUser) continue;
+      try {
+        const chat = await contact.getChat();
+        if (!chat) continue;
+        const messages = await chat.fetchMessages({ limit: 100 });
 
-  for (const contact of contacts) {
-    if (!contact.isUser) continue;
-    try {
-      const chat = await contact.getChat();
-      if (!chat) continue;
-      const messages = await chat.fetchMessages({ limit: 100 });
-
-      await db.run(
-        `INSERT INTO contacts (name, phone, last_message_date, message_count)
+        await db.run(
+          `INSERT INTO contacts (name, phone, last_message_date, message_count)
          VALUES (?, ?, ?, ?)`,
-        [
-          contact.name || contact.pushname || contact.number,
-          contact.number,
-          messages[0]?.timestamp
-            ? new Date(messages[0].timestamp * 1000).toISOString()
-            : null,
-          messages.length,
-        ]
-      );
-    } catch (err) {
-      console.warn('⚠️ Failed contact:', contact.number, err.message);
+          [
+            contact.name || contact.pushname || contact.number,
+            contact.number,
+            messages[0]?.timestamp
+              ? new Date(messages[0].timestamp * 1000).toISOString()
+              : null,
+            messages.length,
+          ]
+        );
+      } catch (err) {
+        console.warn('⚠️ Failed contact:', contact.number, err.message);
+      }
     }
-  }
 
-  if (res) res.json({ success: true });
+    if (res) res.json({ success: true });
+  } catch (e) {
+    console.error('❌ Failed to fetch contacts:', e.message);
+    return res.status(500).json({ error: 'Client not ready or disconnected' });
+  }
 }

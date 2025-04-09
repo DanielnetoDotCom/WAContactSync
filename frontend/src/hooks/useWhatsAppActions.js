@@ -46,11 +46,12 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
   
   const loadContacts = async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
   
     try {
       setLoading(true);
       const { data: status } = await axios.get('/whatsapp/status', { signal: controller.signal });
+  
       if (!status.ready) {
         Swal.fire({ icon: 'warning', title: 'WhatsApp not connected' });
         return;
@@ -68,14 +69,26 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       });
     } catch (err) {
       if (err.name === 'CanceledError') {
-        // Show partial data (if any), no modal
-        Swal.fire({
-          icon: 'warning',
-          title: 'Timeout',
-          text: 'Some contacts may be missing due to timeout.',
-          toast: true,
-          timer: 3000,
-        });
+        // Still try to get partial data from cache, if available
+        console.warn('⚠️ Timeout fetching contacts. Trying to reuse partial data.');
+        try {
+          const { data } = await axios.get('/contacts'); // Retry without timeout
+          setContacts(data.contacts);
+  
+          Swal.fire({
+            icon: 'warning',
+            title: 'Timeout',
+            text: 'Partial contacts loaded after timeout.',
+            toast: true,
+            timer: 3000,
+          });
+        } catch (innerErr) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Failed to load contacts',
+            text: innerErr.message,
+          });
+        }
       } else {
         Swal.fire({
           icon: 'error',
@@ -88,6 +101,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       setLoading(false);
     }
   };
+  
   
 
   const resetContacts = async () => {
