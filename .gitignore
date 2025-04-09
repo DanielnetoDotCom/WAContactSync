@@ -4,3 +4,4 @@ backend/db/contacts.db
 backend/node_modules/*
 frontend/node_modules/*
 node_modules/*
+js-files.txt
