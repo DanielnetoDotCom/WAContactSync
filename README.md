@@ -162,7 +162,7 @@ SSL_CERT_PATH=/etc/letsencrypt/live/yourdomain.com/fullchain.pem
 **Daniel Neto**  
 🇧🇷 Brazilian Full-Stack Developer  
 📜 PHP Zend Certified • MCP 70-480  
-🔗 [linkedin.com/in/danielneto](https://linkedin.com/in/danielneto)
+🔗 [linkedin.com/in/danielsantosneto](https://www.linkedin.com/in/danielsantosneto/)
 
 ---
 
