@@ -72,41 +72,45 @@ function createClient() {
  */
 export async function reinitializeClient() {
   console.log('♻️ Reinitializing WhatsApp client...');
-  isClientReady = false;
-  latestQR = null;
 
-  if (clientInstance) {
+  // Don't destroy if client was never ready
+  if (!isClientReady) {
+    console.warn('⏭️ Client not ready, skipping destroy.');
+  } else if (clientInstance) {
     try {
-      // Attempt to close browser cleanly
-      if (clientInstance.pupBrowser && typeof clientInstance.pupBrowser === 'function') {
-        const browser = await clientInstance.pupBrowser();
-        if (browser) {
-          await browser.close();
-          console.log('🧹 Browser closed safely');
-        }
+      const browser = await clientInstance.pupBrowser?.();
+      if (browser) {
+        await browser.close();
+        console.log('🧹 Browser closed safely');
       }
 
       await clientInstance.destroy();
       console.log('🛑 WhatsApp client destroyed');
     } catch (err) {
-      console.warn('⚠️ Failed to destroy client cleanly:', err.message);
+      console.warn('⚠️ Error during destroy:', err.message);
     }
   }
 
+  // Always clear old session if exists
   try {
     if (fs.existsSync(sessionDir)) {
       fs.rmSync(sessionDir, { recursive: true, force: true });
       console.log('🗑️ .wwebjs_auth folder deleted');
     }
   } catch (err) {
-    console.error('❌ Error deleting session folder:', err.message);
+    console.error('❌ Failed to remove session folder:', err.message);
   }
 
-  // Small delay to avoid race conditions in Puppeteer
+  // Reset internal flags
+  isClientReady = false;
+  latestQR = null;
+
+  // Delay creation to avoid Puppeteer race conditions
   setTimeout(() => {
     createClient();
   }, 2000);
 }
+
 
 /**
  * Returns the active client instance
