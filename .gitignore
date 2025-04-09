@@ -1,1 +1,3 @@
 .env
+backend/.wwebjs*
+backend/db/contacts.db

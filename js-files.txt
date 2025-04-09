@@ -35,41 +35,363 @@ export default [
 
 
 --- FILE: frontend\src\App.jsx ---
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+
+import Header        from './components/Header';
+import QRSection     from './components/QRSection';
+import ActionButtons from './components/ActionButtons';
+import StatusBanner  from './components/StatusBanner';
+import ContactTable  from './components/ContactTable';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function App() {
-  const [count, setCount] = useState(0)
+  /* ------------- state ------------- */
+  const [qrCode,   setQrCode]   = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [status,   setStatus]   = useState('initial'); // initial | waiting-qr | ready
+  const [loading,  setLoading]  = useState(false);
 
+  /* refs to keep interval IDs */
+  const qrPollRef   = useRef(null); // polling while QR not ready
+  const readyPollRef= useRef(null); // polling until client is authenticated
+
+  /* ------------- actions ------------- */
+  /** Called when the user clicks “Sync WhatsApp” */
+  const syncWhatsApp = async () => {
+    setLoading(true);
+    setStatus('waiting-qr');
+
+    await fetchQrOnce();
+
+    /* start polling for QR if it wasn’t ready */
+    if (!qrPollRef.current) {
+      qrPollRef.current = setInterval(fetchQrOnce, 1000);
+    }
+
+    setLoading(false);
+  };
+
+  /** Single attempt to obtain the QR image */
+  const fetchQrOnce = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/whatsapp/qr`, {
+        validateStatus: () => true, // accept 204 without throwing
+      });
+
+      if (res.status === 200 && res.data.qr) {
+        /* QR is finally available */
+        setQrCode(res.data.qr);
+        clearInterval(qrPollRef.current);
+        qrPollRef.current = null;
+
+        /* now poll for “ready” status */
+        if (!readyPollRef.current) {
+          readyPollRef.current = setInterval(checkClientStatus, 1000);
+        }
+
+        Swal.fire({
+          icon: 'info',
+          title: 'Scan the QR code',
+          text: 'Open WhatsApp on your phone and scan the code.',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 4000,
+        });
+      }
+    } catch (err) {
+      console.error('QR fetch failed:', err.message);
+    }
+  };
+
+  /** Poll backend until WhatsApp reports “ready” */
+  const checkClientStatus = async () => {
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/api/whatsapp/status`);
+
+      if (data.ready) {
+        setStatus('ready');
+        setQrCode(null);
+
+        clearInterval(readyPollRef.current);
+        readyPollRef.current = null;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'WhatsApp connected',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+        });
+      }
+    } catch (err) {
+      console.warn('Status check failed:', err.message);
+    }
+  };
+
+  /** Load contacts from the API */
+  const loadContacts = async () => {
+    try {
+      setLoading(true);
+
+      const { data: s } = await axios.get(`${API_BASE_URL}/api/whatsapp/status`);
+      if (!s.ready) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'WhatsApp is not connected',
+          text: 'Please sync WhatsApp first.',
+        });
+        return;
+      }
+
+      const { data } = await axios.get(`${API_BASE_URL}/api/contacts`);
+      setContacts(data.contacts);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Contacts loaded',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+      });
+    } catch (err) {
+      console.error('Failed to load contacts', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error loading contacts',
+        text: err.response?.data?.error || err.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Delete DB + WhatsApp session */
+  const resetContacts = async () => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will delete all contacts and log out of WhatsApp.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, reset everything!',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API_BASE_URL}/api/contacts/reset`);
+      setContacts([]);
+      setStatus('initial');
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Reset completed',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+      });
+    } catch (err) {
+      console.error('Reset failed', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to reset',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* Cleanup any running intervals when the component unmounts */
+  useEffect(() => {
+    return () => {
+      if (qrPollRef.current)   clearInterval(qrPollRef.current);
+      if (readyPollRef.current)clearInterval(readyPollRef.current);
+    };
+  }, []);
+
+  /* ------------- UI ------------- */
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="p-4 w-full mx-auto">
+      <Header />
+
+      <ActionButtons
+        onSync={syncWhatsApp}
+        onLoad={loadContacts}
+        onReset={resetContacts}
+        loading={loading}
+      />
+
+      <QRSection status={status} qrCode={qrCode} />
+      <StatusBanner status={status} />
+      <ContactTable contacts={contacts} loading={loading} />
+    </div>
+  );
 }
 
-export default App
+export default App;
+
+
+--- FILE: frontend\src\components\ActionButtons.jsx ---
+import { ArrowPathIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
+
+export default function ActionButtons({ onSync, onLoad, onReset, loading }) {
+  return (
+    <div className="flex gap-4 justify-center mb-6">
+      <button
+        onClick={onSync}
+        disabled={loading}
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        <ArrowPathIcon className="w-5 h-5" />
+        Sync WhatsApp
+      </button>
+
+      <button
+        onClick={onLoad}
+        disabled={loading}
+        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        <UserGroupIcon className="w-5 h-5" />
+        Load Contacts
+      </button>
+
+      <button
+        onClick={onReset}
+        disabled={loading}
+        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        <TrashIcon className="w-5 h-5" />
+        Reset All
+      </button>
+    </div>
+  );
+}
+
+
+--- FILE: frontend\src\components\ContactTable.jsx ---
+import { useState } from 'react';
+import { PhoneIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/solid';
+
+export default function ContactTable({ contacts, loading }) {
+  const [sortBy, setSortBy] = useState('last_message_date');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  if (loading) return <p>Loading...</p>;
+  if (contacts.length === 0) return <p>No contacts found.</p>;
+
+  const sortedContacts = [...contacts].sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+  
+    if (sortBy === 'message_count') {
+      return sortAsc ? (aVal - bVal) : (bVal - aVal);
+    }
+  
+    if (sortBy === 'last_message_date') {
+      const aDate = new Date(aVal || 0).getTime();
+      const bDate = new Date(bVal || 0).getTime();
+      return sortAsc ? (aDate - bDate) : (bDate - aDate);
+    }
+  
+    // Default: string comparison
+    return sortAsc
+      ? String(aVal || '').localeCompare(String(bVal || ''))
+      : String(bVal || '').localeCompare(String(aVal || ''));
+  });
+  
+  const handleSort = (column) => {
+    setSortBy(column);
+    setSortAsc(sortBy === column ? !sortAsc : true);
+  };
+
+  return (
+    <div className="mt-6 overflow-x-auto">
+      <h2 className="text-lg font-semibold mb-3">Contacts</h2>
+      <table className="min-w-full border border-gray-300 rounded-md overflow-hidden shadow-sm">
+        <thead className="bg-gray-100 text-gray-700">
+          <tr>
+            <th className="text-left px-4 py-2">#</th>
+            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('name')}>
+              Name {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
+            </th>
+            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('phone')}>
+              <div className="flex items-center gap-1">
+                <PhoneIcon className="w-4 h-4 text-gray-600" />
+                Phone {sortBy === 'phone' ? (sortAsc ? '▲' : '▼') : ''}
+              </div>
+            </th>
+            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('message_count')}>
+              <div className="flex items-center gap-1">
+                <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-gray-600" />
+                Total Messages {sortBy === 'message_count' ? (sortAsc ? '▲' : '▼') : ''}
+              </div>
+            </th>
+            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('last_message_date')}>
+              Last Message {sortBy === 'last_message_date' ? (sortAsc ? '▲' : '▼') : ''}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedContacts.map((contact, index) => (
+            <tr key={index} className="border-t">
+              <td className="px-4 py-2">{index + 1}</td>
+              <td className="px-4 py-2">{contact.name}</td>
+              <td className="px-4 py-2">{contact.phone}</td>
+              <td className="px-4 py-2 text-center">{contact.message_count ?? 0}</td>
+              <td className="px-4 py-2">{contact.last_message_date ? new Date(contact.last_message_date).toLocaleString() : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+
+--- FILE: frontend\src\components\Header.jsx ---
+export default function Header() {
+    return (
+      <h1 className="text-2xl font-bold mb-6 text-center">📱 WhatsApp Contact Sync</h1>
+    );
+  }
+  
+
+--- FILE: frontend\src\components\QRSection.jsx ---
+export default function QRSection({ status, qrCode }) {
+    if (status !== 'waiting-qr') return null;
+  
+    return (
+      <div className="text-center">
+        <p className="mb-2 font-medium text-gray-700">Scan this QR code with WhatsApp:</p>
+        {qrCode ? (
+          <img src={qrCode} alt="QR Code" className="mx-auto w-64 h-64 border" />
+        ) : (
+          <p>Generating QR code...</p>
+        )}
+      </div>
+    );
+  }
+  
+
+--- FILE: frontend\src\components\StatusBanner.jsx ---
+export default function StatusBanner({ status }) {
+  if (status !== 'ready') return null;
+
+  return (
+    <div className="text-center text-green-700 font-semibold mb-4">
+      ✅ WhatsApp is connected and ready!
+    </div>
+  );
+}
 
 
 --- FILE: frontend\src\main.jsx ---
@@ -86,38 +408,387 @@ createRoot(document.getElementById('root')).render(
 
 
 --- FILE: frontend\vite.config.js ---
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite'
+import process from 'process'
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
-  server: {
-    // allowedHosts: ['ticket-system.danielneto.com'],
-    host: true,  
-    port: parseInt(import.meta.env.VITE_PORT) || 5001,
-  },
+export default defineConfig(({ mode }) => {
+  // Carregar as variáveis de ambiente corretamente
+  const env = loadEnv(mode, process.cwd(), '')
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+    ],
+    server: {
+      // allowedHosts: ['ticket-system.danielneto.com'],
+      host: true,  
+      port: parseInt(env.VITE_PORT) || 5001, // Usando a variável carregada do .env
+    },
+  }
 })
+
+
+--- FILE: backend\controllers\contactsController.js ---
+import { getDB } from '../services/db.js';
+import {
+  getInstance as getClient,
+  getClientStatus,
+  reinitializeClient,
+  setClientReady,
+} from '../services/whatsappService.js';
+
+import fs from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export async function listContacts(req, res) {
+  const db = await getDB();
+  let contacts = await db.all(`SELECT * FROM contacts ORDER BY last_message_date DESC`);
+
+  if (contacts.length === 0) {
+    await syncContacts(); // sync if empty
+    contacts = await db.all(`SELECT * FROM contacts ORDER BY last_message_date DESC`);
+  }
+
+  res.json({ contacts });
+}
+
+export async function resetContacts(req, res) {
+  try {
+    const db = await getDB();
+    await db.exec('DELETE FROM contacts');
+
+    const client = getClient();
+    if (client) {
+      try {
+        await client.destroy(); // must fully release files
+        setClientReady(false);
+        console.log('🛑 WhatsApp client destroyed');
+      } catch (err) {
+        console.warn('⚠️ Failed to destroy client:', err.message);
+      }
+    }
+
+    const sessionDir = resolve(__dirname, '../.wwebjs_auth');
+    if (fs.existsSync(sessionDir)) {
+      try {
+        fs.rmSync(sessionDir, { recursive: true, force: true });
+        console.log('🗑️ WhatsApp session removed');
+      } catch (err) {
+        if (err.code === 'EBUSY') {
+          console.warn(`⚠️ Could not delete session files: ${err.path}`);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    await reinitializeClient(); // force new QR
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to reset:', err);
+    res.status(500).json({ error: 'Failed to reset' });
+  }
+}
+
+export async function syncContacts(req, res = null) {
+  const isReady = getClientStatus();
+  if (!isReady) {
+    const message = 'WhatsApp client is not ready';
+    console.warn(message);
+    if (res) return res.status(503).json({ error: message });
+    else throw new Error(message);
+  }
+
+  const db = await getDB();
+  const client = getClient();
+  const contacts = await client.getContacts();
+
+  await db.exec('DELETE FROM contacts');
+
+  for (const contact of contacts) {
+    if (!contact.isUser) continue;
+    try {
+      const chat = await contact.getChat();
+      if (!chat) continue;
+      const messages = await chat.fetchMessages({ limit: 100 });
+
+      await db.run(
+        `INSERT INTO contacts (name, phone, last_message_date, message_count)
+         VALUES (?, ?, ?, ?)`,
+        [
+          contact.name || contact.pushname || contact.number,
+          contact.number,
+          messages[0]?.timestamp
+            ? new Date(messages[0].timestamp * 1000).toISOString()
+            : null,
+          messages.length,
+        ]
+      );
+    } catch (err) {
+      console.warn('⚠️ Failed contact:', contact.number, err.message);
+    }
+  }
+
+  if (res) res.json({ success: true });
+}
+
+
+--- FILE: backend\db\index.js ---
+
+
+--- FILE: backend\init-db.js ---
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import { resolve } from 'path';
+
+const init = async () => {
+    const db = await open({
+        filename: resolve(__dirname, 'db', 'contacts.db'),
+        driver: sqlite3.Database
+    });
+
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS contacts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      phone TEXT,
+      last_message_date TEXT,
+      message_count INTEGER
+    );
+  `);
+
+    console.log('Database initialized');
+};
+
+init();
+
+
+--- FILE: backend\routes\contacts.js ---
+import express from 'express';
+import {
+  listContacts,
+  syncContacts,
+  resetContacts,
+} from '../controllers/contactsController.js';
+
+const router = express.Router();
+
+// GET /api/contacts
+router.get('/', listContacts);
+
+// POST /api/contacts/sync
+router.post('/sync', syncContacts);
+
+// DELETE /api/contacts/reset
+router.delete('/reset', resetContacts);
+
+export default router;
+
+
+--- FILE: backend\routes\whatsapp.js ---
+import express from 'express';
+import {
+  getLatestQR,
+  getClientStatus,
+  getInstance as getClient,
+} from '../services/whatsappService.js';
+import { syncContacts } from '../controllers/contactsController.js';
+
+const router = express.Router();
+
+// GET /api/whatsapp/qr
+router.get('/qr', (req, res) => {
+  const qrCode = getLatestQR();
+  if (qrCode) {
+    res.json({ qr: qrCode });
+  } else {
+    res.status(204).json({ message: 'No QR code available' });
+  }
+});
+
+// GET /api/whatsapp/status
+router.get('/status', (req, res) => {
+  const ready = getClientStatus();
+  res.json({ ready });
+});
+
+// GET /api/whatsapp/client-info
+router.get('/client-info', async (req, res) => {
+  try {
+    const client = getClient();
+    const info = await client.info;
+    res.json({
+      pushname: info.pushname,
+      wid: info.wid,
+      platform: info.platform,
+    });
+  } catch (err) {
+    console.error('Error getting client info:', err);
+    res.status(500).json({ error: 'Failed to get client info' });
+  }
+});
+
+// Optional: re-sync route here if needed
+// router.post('/sync', syncContacts);
+
+export default router;
 
 
 --- FILE: backend\server.js ---
 import express from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
+import contactsRoutes from './routes/contacts.js';
+import whatsappRoutes from './routes/whatsapp.js';
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+dotenv.config();
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 5000;
+app.use(cors());
+app.use(express.json());
 
-app.get('/api/hello', (req, res) => {
-  res.json({ message: 'Hello from backend!' });
-});
+// Route namespaces
+app.use('/api/contacts', contactsRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
+const PORT = process.env.BACKEND_PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+
+--- FILE: backend\services\db.js ---
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export const getDB = async () => {
+  return open({
+    filename: resolve(__dirname, '../db/contacts.db'),
+    driver: sqlite3.Database,
+  });
+};
+
+
+--- FILE: backend\services\whatsappService.js ---
+import fs from 'fs';
+import path, { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import pkg from 'whatsapp-web.js';
+import qrcode from 'qrcode';
+
+const { Client, LocalAuth } = pkg;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const sessionDir = resolve(__dirname, '../.wwebjs_auth');
+
+// Ignore busy log file
+const originalUnlinkSync = fs.unlinkSync;
+fs.unlinkSync = function (targetPath) {
+  if (targetPath.includes('chrome_debug.log')) {
+    try { originalUnlinkSync(targetPath); } 
+    catch (e) {
+      if (e.code === 'EBUSY') {
+        console.warn(`⚠️ Ignoring busy file: ${targetPath}`);
+        return;
+      }
+      throw e;
+    }
+  } else {
+    return originalUnlinkSync(targetPath);
+  }
+};
+
+let clientInstance = null;
+let latestQR = null;
+let isClientReady = false;
+
+function createClient() {
+  const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: { headless: true },
+  });
+
+  client.on('qr', async (qr) => {
+    latestQR = await qrcode.toDataURL(qr);
+    console.log('🔄 QR code generated');
+  });
+
+  client.on('ready', () => {
+    isClientReady = true;
+    console.log('✅ WhatsApp client is ready!');
+  });
+
+  client.on('authenticated', () => {
+    console.log('🔐 Authenticated with WhatsApp.');
+  });
+
+  client.on('auth_failure', (msg) => {
+    isClientReady = false;
+    console.error('❌ Authentication failed:', msg);
+  });
+
+  client.initialize();
+  clientInstance = client;
+}
+
+async function reinitializeClient() {
+  console.log('♻️ Reinitializing WhatsApp client...');
+  isClientReady = false;
+  latestQR = null;
+
+  if (clientInstance) {
+    try {
+      await clientInstance.destroy(); // important!
+      console.log('🛑 Previous client destroyed.');
+    } catch (err) {
+      console.warn('⚠️ Error destroying client:', err.message);
+    }
+  }
+
+  try {
+    if (fs.existsSync(sessionDir)) {
+      fs.rmSync(sessionDir, { recursive: true, force: true });
+      console.log('🗑️ .wwebjs_auth folder deleted');
+    }
+  } catch (err) {
+    console.error('Failed to delete session folder:', err.message);
+  }
+
+  createClient();
+}
+
+
+function getInstance() {
+  return clientInstance;
+}
+
+function getLatestQR() {
+  return latestQR;
+}
+
+function getClientStatus() {
+  return isClientReady;
+}
+
+function setClientReady(state) {
+  isClientReady = state;
+}
+
+createClient(); // start on load
+
+export {
+  getInstance,
+  getLatestQR,
+  getClientStatus,
+  setClientReady,
+  reinitializeClient,
+};
 
