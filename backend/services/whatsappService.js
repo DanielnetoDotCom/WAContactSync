@@ -33,7 +33,8 @@ let isClientReady = false;
 function createClient() {
   const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true },
+    puppeteer: { headless: true },,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   client.on('qr', async (qr) => {
