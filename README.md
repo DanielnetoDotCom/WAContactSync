@@ -1,72 +1,149 @@
-- **Project Description:**  
-  This project is about synchronizing WhatsApp contacts and interaction metadata into an SQL database. The goal is to provide a clean and sortable interface to visualize a network of contacts. The application operates on a per-session basis and uses QR Code authentication with WhatsApp Web.
+# 📱 WhatsApp Contact Sync
 
-- **Features:**  
-  - Synchronizes WhatsApp contacts and interaction metadata.  
-  - Displays a QR Code for WhatsApp Web authentication.  
-  - Temporarily stores data in an SQLite database.  
-  - Provides a user interface to view contacts sorted by the date of the last interaction.
+A simple and smart tool to connect with your WhatsApp Web, fetch your contact list and message metadata, and display everything in a beautiful and interactive web interface.
 
-- **Project Architecture:**  
-  - **Frontend:**  
-    - Framework: React (initialized with Vite).  
-    - Styling: Tailwind CSS.  
-    - Features include displaying the QR Code, a synchronization button, and a contacts table.  
-    - Communicates with the backend via Axios.
-  - **Backend:**  
-    - Runtime: Node.js.  
-    - Framework: Express.js.  
-    - Exposes REST APIs for contact synchronization and retrieval.  
-    - Integrates with WhatsApp using whatsapp-web.js.
-  - **WhatsApp Integration:**  
-    - Main Library: whatsapp-web.js.  
-    - Fallback Option: Puppeteer, if necessary.
-  - **Database:**  
-    - Engine: SQLite.  
-    - Mode: Persistent storage (with the option to switch to in-memory mode for a fully ephemeral experience).
+This project was developed by Daniel Neto as a full-stack demonstration using modern technologies like React, Node.js, and SQLite.
 
-- **User Flow:**  
-  - When the application starts, a new session is initiated.  
-  - The user clicks the "Sync WhatsApp" button.  
-  - A QR Code is displayed for WhatsApp Web login.  
-  - After successful authentication, the app extracts contact data (name, phone number, date of last interaction, and an approximate message count) and saves it into the database.  
-  - The interface updates automatically to display the sorted contacts table.
+---
 
-- **Execution Plan and Time Estimates:**  
-  - Environment Setup (React with Vite, Tailwind CSS, Express.js, SQLite): **0.5 day**.  
-  - WhatsApp Integration (setting up whatsapp-web.js for authentication and data extraction): **2 days**.  
-  - Data Insertion Logic: **1 day**.  
-  - API Development: **1 day**.  
-  - Frontend Implementation (synchronization button and table view): **1 day**.  
-  - Testing and Refinement (including error handling and loading states): **1.5 days**.  
-  - **Total Estimated Time:** **7 days**.
+## ✨ What This App Can Do
 
-- **Risks and Considerations:**  
-  - The session token from whatsapp-web.js may expire, requiring re-authentication via QR Code.  
-  - The message count might be limited or not fully accurate.  
-  - Data is maintained on a per-session basis, with no persistence across sessions, as specified by design.
+- 🔄 Sync your WhatsApp account using a QR code
+- 👥 Show a list of your contacts with:
+  - Name and phone number
+  - Total messages exchanged (up to 100 per contact)
+  - Last message date
+  - New messages since the last sync
+- 🔍 Sort and explore the contact list
+- 🧼 Reset everything at any time (including session and contacts)
+- 📸 Automatically refreshes QR code and status via real-time events (no manual refresh needed!)
+- 🧭 Step-by-step user tour built-in (with React Joyride)
 
-- **Project Dependencies:**  
-  - **Backend:**  
-    - express  
-    - whatsapp-web.js  
-    - sqlite3  
-  - **Frontend:**  
-    - react (via Vite)  
-    - tailwindcss  
-    - axios
+---
 
-- **Installation Instructions:**  
-  1. Clone the repository.  
-  2. In the project directory, install the backend dependencies using `npm install` or `yarn install` in the appropriate folder.  
-  3. Configure the SQLite database by setting up the schema as needed (the `contacts.db` file will be created automatically in persistent mode).  
-  4. Install the frontend dependencies and start the project with `npm run dev` or `yarn dev`.
+## 🖼️ Preview
 
-- **Usage Instructions:**  
-  1. Start both the backend server and the frontend application.  
-  2. Access the application via a web browser.  
-  3. Click the "Sync WhatsApp" button to initiate the QR Code authentication flow.  
-  4. Upon successful authentication, the application will fetch and display an updated contacts table.
+![screenshot](https://your-screenshot-url-if-available.com)
 
-- **License:**  
-  The project is licensed under the MIT License, permitting broad use and modification under its terms.
+---
+
+## 🧰 Tech Stack
+
+| Layer      | Tech Used                  |
+|------------|----------------------------|
+| Frontend   | React (Vite), Tailwind CSS |
+| Backend    | Node.js, Express.js        |
+| WhatsApp   | [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js) |
+| Database   | SQLite                     |
+
+---
+
+## 🧑‍💻 How to Install (Developer Setup)
+
+### 📦 Requirements
+
+- Node.js ≥ 18
+- npm or yarn
+
+---
+
+### 🔧 Step-by-step Installation
+
+#### 1. Clone the repository
+```bash
+git clone https://github.com/YOUR_USERNAME/whatsapp-contact-sync
+cd whatsapp-contact-sync
+```
+
+#### 2. Backend setup
+```bash
+cd backend
+npm install
+node init-db.js        # Initializes the SQLite database
+npm start              # Starts the backend on http://localhost:4000
+```
+
+#### 3. Frontend setup
+```bash
+cd frontend
+npm install
+npm run dev            # Starts frontend on http://localhost:5173
+```
+
+Make sure you have this in your `.env` file inside `frontend/`:
+```
+VITE_API_BASE_URL=http://localhost:4000
+```
+
+---
+
+## 👨‍💼 How to Use
+
+### 1. Open the web interface
+
+Go to: [http://localhost:5173](http://localhost:5173)
+
+### 2. Sync WhatsApp
+- Click **"Sync WhatsApp"**
+- A QR code will be displayed
+- Scan it using WhatsApp from your mobile phone
+
+### 3. Load Contacts
+- Once connected, click **"Load Contacts"**
+- The table will show your contacts with last message info
+
+### 4. Reset All
+- Click **"Reset All"** to:
+  - Log out from WhatsApp
+  - Clear the contact list
+  - Prepare for a new session
+
+### 5. Take a Quick Tour (Optional)
+- Click **"❓ Help / Tour"** to learn how the interface works.
+
+---
+
+## 🔐 Privacy
+
+- All your data stays **on your machine**
+- Nothing is stored or shared externally
+- You can delete all session data at any time
+
+---
+
+## 🔄 Sync Details
+
+- Only the **latest 100 messages** per contact are used
+- Sorting works by message count, name, phone, or last date
+- "New messages since last sync" is shown based on the last loaded state
+
+---
+
+## 🚀 Improvements Considered
+
+- Pagination for large contact lists
+- Export to CSV
+- Dark mode toggle
+- Better mobile support
+
+---
+
+## 🛠️ Troubleshooting
+
+- If QR code doesn’t show: try clicking “Reset All” and then “Sync WhatsApp” again
+- If contacts don’t load: wait a few seconds or try refreshing the page
+- Logs can be viewed in the terminal (both backend and frontend)
+
+---
+
+## 🧑‍🎓 About the Developer
+
+**Daniel Neto**  
+🇧🇷 Based in Brazil  
+💻 Full Stack Web Developer  
+📜 PHP Zend Certified | MCP 70-480  
+🔗 [linkedin.com/in/danielneto](https://linkedin.com/in/danielneto)
+
+---
+
+> Thank you for checking out this project! I hope it’s useful and a good demonstration of clean architecture, real-time integrations, and practical UX.

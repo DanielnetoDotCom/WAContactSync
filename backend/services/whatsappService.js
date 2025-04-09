@@ -3,6 +3,7 @@ import path, { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import pkg from 'whatsapp-web.js';
 import qrcode from 'qrcode';
+import { broadcastEvent } from '../routes/whatsappEvents.js';
 
 const { Client, LocalAuth } = pkg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,12 +39,15 @@ function createClient() {
   client.on('qr', async (qr) => {
     latestQR = await qrcode.toDataURL(qr);
     console.log('🔄 QR code generated');
+    broadcastEvent('qr', { qr: latestQR });
   });
-
+  
   client.on('ready', () => {
     isClientReady = true;
     console.log('✅ WhatsApp client is ready!');
+    broadcastEvent('ready', {});
   });
+  
 
   client.on('authenticated', () => {
     console.log('🔐 Authenticated with WhatsApp.');

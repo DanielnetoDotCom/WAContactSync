@@ -1,4 +1,5 @@
-import { ArrowPathIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { QrCodeIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
+
 
 export default function ActionButtons({ onSync, onLoad, onReset, loading }) {
   return (
@@ -6,16 +7,16 @@ export default function ActionButtons({ onSync, onLoad, onReset, loading }) {
       <button
         onClick={onSync}
         disabled={loading}
-        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="sync-button flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
       >
-        <ArrowPathIcon className="w-5 h-5" />
+        <QrCodeIcon className="w-5 h-5" />
         Sync WhatsApp
       </button>
 
       <button
         onClick={onLoad}
         disabled={loading}
-        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="load-button flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
       >
         <UserGroupIcon className="w-5 h-5" />
         Load Contacts
@@ -24,7 +25,7 @@ export default function ActionButtons({ onSync, onLoad, onReset, loading }) {
       <button
         onClick={onReset}
         disabled={loading}
-        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="reset-button flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50"
       >
         <TrashIcon className="w-5 h-5" />
         Reset All

@@ -5,8 +5,19 @@ export default function ContactTable({ contacts, loading }) {
   const [sortBy, setSortBy] = useState('last_message_date');
   const [sortAsc, setSortAsc] = useState(false);
 
-  if (loading) return <p>Loading...</p>;
-  if (contacts.length === 0) return <p>No contacts found.</p>;
+  if (loading) {
+    return (
+      <div className=" contacts-table text-center py-10 text-gray-500 animate-pulse">
+        <svg className="mx-auto h-10 w-10 animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0v4a8 8 0 00-8 8z"></path>
+        </svg>
+        <p>Loading contacts…</p>
+      </div>
+    );
+  }
+  
+  if (contacts.length === 0) return <p className='contacts-table '>No contacts found.</p>;
 
   const sortedContacts = [...contacts].sort((a, b) => {
     const aVal = a[sortBy];
@@ -34,7 +45,7 @@ export default function ContactTable({ contacts, loading }) {
   };
 
   return (
-    <div className="mt-6 overflow-x-auto">
+    <div className="contacts-table mt-6 overflow-x-auto">
       <h2 className="text-lg font-semibold mb-3">Contacts</h2>
       <table className="min-w-full border border-gray-300 rounded-md overflow-hidden shadow-sm">
         <thead className="bg-gray-100 text-gray-700">

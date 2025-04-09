@@ -3,8 +3,8 @@ import {
   getLatestQR,
   getClientStatus,
   getInstance as getClient,
+  reinitializeClient,
 } from '../services/whatsappService.js';
-import { syncContacts } from '../controllers/contactsController.js';
 
 const router = express.Router();
 
@@ -38,6 +38,11 @@ router.get('/client-info', async (req, res) => {
     console.error('Error getting client info:', err);
     res.status(500).json({ error: 'Failed to get client info' });
   }
+});
+
+router.post('/restart', async (req, res) => {
+  await reinitializeClient();
+  res.json({ success: true });
 });
 
 // Optional: re-sync route here if needed
