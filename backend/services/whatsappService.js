@@ -9,7 +9,7 @@ const { Client, LocalAuth } = pkg;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionDir = resolve(__dirname, '../.wwebjs_auth');
 
-// Ignore busy log file
+// Patch fs.unlinkSync to avoid EBUSY log file
 const originalUnlinkSync = fs.unlinkSync;
 fs.unlinkSync = function (targetPath) {
   if (targetPath.includes('chrome_debug.log')) {
@@ -31,15 +31,15 @@ let latestQR = null;
 let isClientReady = false;
 
 /**
- * Initializes a new WhatsApp client
+ * Creates and initializes a new WhatsApp client
  */
 function createClient() {
   const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
   });
 
   client.on('qr', async (qr) => {
@@ -68,19 +68,28 @@ function createClient() {
 }
 
 /**
- * Destroys and reinitializes the WhatsApp client
+ * Safely destroys and reinitializes the WhatsApp client
  */
-async function reinitializeClient() {
+export async function reinitializeClient() {
   console.log('♻️ Reinitializing WhatsApp client...');
   isClientReady = false;
   latestQR = null;
 
   if (clientInstance) {
     try {
+      // Attempt to close browser cleanly
+      if (clientInstance.pupBrowser && typeof clientInstance.pupBrowser === 'function') {
+        const browser = await clientInstance.pupBrowser();
+        if (browser) {
+          await browser.close();
+          console.log('🧹 Browser closed safely');
+        }
+      }
+
       await clientInstance.destroy();
-      console.log('🛑 Previous client destroyed.');
+      console.log('🛑 WhatsApp client destroyed');
     } catch (err) {
-      console.warn('⚠️ Error destroying client:', err.message);
+      console.warn('⚠️ Failed to destroy client cleanly:', err.message);
     }
   }
 
@@ -90,50 +99,42 @@ async function reinitializeClient() {
       console.log('🗑️ .wwebjs_auth folder deleted');
     }
   } catch (err) {
-    console.error('Failed to delete session folder:', err.message);
+    console.error('❌ Error deleting session folder:', err.message);
   }
 
-  // Delay before recreating the client to ensure Puppeteer is released
+  // Small delay to avoid race conditions in Puppeteer
   setTimeout(() => {
     createClient();
-  }, 1500); // 1.5 seconds
+  }, 2000);
 }
 
 /**
- * Gets the current WhatsApp client instance
+ * Returns the active client instance
  */
-function getInstance() {
+export function getInstance() {
   return clientInstance;
 }
 
 /**
- * Gets the latest generated QR code
+ * Returns the latest QR code
  */
-function getLatestQR() {
+export function getLatestQR() {
   return latestQR;
 }
 
 /**
- * Returns true if client is ready
+ * Returns true if WhatsApp is ready
  */
-function getClientStatus() {
+export function getClientStatus() {
   return isClientReady;
 }
 
 /**
- * Allows updating the internal ready flag
+ * Allows setting the client status
  */
-function setClientReady(state) {
+export function setClientReady(state) {
   isClientReady = state;
 }
 
-// Initialize client on module load
+// Create client when service starts
 createClient();
-
-export {
-  getInstance,
-  getLatestQR,
-  getClientStatus,
-  setClientReady,
-  reinitializeClient,
-};
