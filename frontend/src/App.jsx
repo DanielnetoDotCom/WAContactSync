@@ -9,11 +9,13 @@ import ActionButtons from './components/ActionButtons';
 import QRSection from './components/QRSection';
 import StatusBanner from './components/StatusBanner';
 import ContactTable from './components/ContactTable';
+import SyncProgress from './components/SyncProgress';
 
 function App() {
   const [contacts, setContacts] = useState([]);
   const [qrCode, setQrCode] = useState(null);
   const [status, setStatus] = useState('initial');
+  const [progress, setProgress] = useState(null); // New: sync progress state
 
   const { syncWhatsApp, loadContacts, resetContacts, loading } =
     useWhatsAppActions(setContacts, setQrCode, setStatus);
@@ -21,15 +23,24 @@ function App() {
 
   useEffect(() => {
     const source = new EventSource(`${import.meta.env.VITE_API_BASE_URL}/api/whatsapp/events`);
+
     source.addEventListener('qr', (e) => {
       const { qr } = JSON.parse(e.data);
       setQrCode(qr);
       setStatus('waiting-qr');
     });
+
     source.addEventListener('ready', () => {
       setQrCode(null);
       setStatus('ready');
     });
+
+    // New: listen to sync progress event
+    source.addEventListener('sync-progress', (e) => {
+      const data = JSON.parse(e.data);
+      setProgress(data);
+    });
+
     return () => source.close();
   }, []);
 
@@ -63,7 +74,11 @@ function App() {
 
       <QRSection status={status} qrCode={qrCode} />
       <StatusBanner status={status} />
-      <ContactTable contacts={contacts} loading={loading} />
+
+      {/* New: show sync progress */}
+      {progress && <SyncProgress progress={progress} />}
+
+      <ContactTable contacts={contacts} setContacts={setContacts} loading={loading} />
     </div>
   );
 }

@@ -1,9 +1,19 @@
 export default function StatusBanner({ status }) {
-  if (status !== 'ready') return null;
+  if (status === 'authenticating') {
+    return (
+      <div className="status-banner text-center text-blue-700 font-semibold mb-4">
+        🔄 QR code scanned. Syncing contacts...
+      </div>
+    );
+  }
 
-  return (
-    <div className="status-banner text-center text-green-700 font-semibold mb-4">
-      ✅ WhatsApp is connected and ready!
-    </div>
-  );
+  if (status === 'ready') {
+    return (
+      <div className="status-banner text-center text-green-700 font-semibold mb-4">
+        ✅ WhatsApp is connected and ready!
+      </div>
+    );
+  }
+
+  return null;
 }

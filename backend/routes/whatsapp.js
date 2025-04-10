@@ -28,6 +28,10 @@ router.get('/status', (req, res) => {
 router.get('/client-info', async (req, res) => {
   try {
     const client = getClient();
+    if (!client) {
+      return res.status(500).json({ error: 'WhatsApp client is not available' });
+    }
+
     const info = await client.info;
     res.json({
       pushname: info.pushname,
@@ -40,12 +44,10 @@ router.get('/client-info', async (req, res) => {
   }
 });
 
+// POST /api/whatsapp/restart
 router.post('/restart', async (req, res) => {
   await reinitializeClient();
   res.json({ success: true });
 });
-
-// Optional: re-sync route here if needed
-// router.post('/sync', syncContacts);
 
 export default router;

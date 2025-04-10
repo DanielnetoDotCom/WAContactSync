@@ -8,9 +8,9 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
   const syncWhatsApp = async () => {
     try {
       setLoading(true);
-  
+
       const { data } = await axios.get('/whatsapp/status');
-  
+
       if (data.ready) {
         const confirm = await Swal.fire({
           title: 'WhatsApp is already connected',
@@ -18,16 +18,16 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
           icon: 'question',
           showCancelButton: true,
         });
-  
+
         if (!confirm.isConfirmed) return;
       }
-  
+
       // Reinicia sempre, mesmo se não estiver pronto
       await axios.post('/whatsapp/restart');
       setContacts([]);
       setQrCode(null);
       setStatus('waiting-qr');
-  
+
       Swal.fire({
         icon: 'info',
         title: 'Waiting for QR code',
@@ -42,25 +42,29 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       setLoading(false);
     }
   };
-  
-  
+
+
   const loadContacts = async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
-  
+    let timeout;
+    if (!document.hidden) {
+      timeout = setTimeout(() => controller.abort(), 5000); // Only timeout if not syncing
+    }
+
+
     try {
       setLoading(true);
       const { data: status } = await axios.get('/whatsapp/status', { signal: controller.signal });
-  
+
       if (!status.ready) {
         Swal.fire({ icon: 'warning', title: 'WhatsApp not connected' });
         return;
       }
-  
+
       const { data } = await axios.get('/contacts', { signal: controller.signal });
-  
+
       setContacts(data.contacts);
-  
+
       Swal.fire({
         icon: 'success',
         title: 'Contacts loaded',
@@ -74,7 +78,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
         try {
           const { data } = await axios.get('/contacts'); // Retry without timeout
           setContacts(data.contacts);
-  
+
           Swal.fire({
             icon: 'warning',
             title: 'Timeout',
@@ -101,8 +105,8 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       setLoading(false);
     }
   };
-  
-  
+
+
 
   const resetContacts = async () => {
     const confirm = await Swal.fire({
@@ -120,7 +124,7 @@ export function useWhatsAppActions(setContacts, setQrCode, setStatus) {
       setStatus('initial');
       Swal.fire({ icon: 'success', title: 'Reset complete', toast: true, timer: 2000 });
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Reset failed '+err.message });
+      Swal.fire({ icon: 'error', title: 'Reset failed ' + err.message });
     } finally {
       setLoading(false);
     }

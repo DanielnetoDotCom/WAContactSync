@@ -56,6 +56,7 @@ function createClient() {
 
   client.on('authenticated', () => {
     console.log('🔐 Authenticated with WhatsApp.');
+    broadcastEvent('authenticated', {});
   });
 
   client.on('auth_failure', (msg) => {

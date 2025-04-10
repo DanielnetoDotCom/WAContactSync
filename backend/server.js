@@ -8,6 +8,7 @@ import http from 'http';
 import contactsRoutes from './routes/contacts.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import whatsappEventRoutes from './routes/whatsappEvents.js';
+import messagesRoutes from './routes/messages.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/whatsapp', whatsappEventRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Use port from env or fallback to 4000
 const PORT = process.env.BACKEND_PORT || 4000;
