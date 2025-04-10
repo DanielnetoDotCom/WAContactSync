@@ -1,6 +1,8 @@
 import { QrCodeIcon, UserGroupIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import React from 'react';
+
 
 export default function ActionButtons({ onSync, onLoad, onReset, onSyncMore, loading }) {
   const [onlyKnown, setOnlyKnown] = useState(true);

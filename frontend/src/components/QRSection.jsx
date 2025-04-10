@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function QRSection({ status, qrCode }) {
     if (status !== 'waiting-qr') return null;
   

@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { PhoneIcon, ChatBubbleLeftEllipsisIcon, EyeIcon } from '@heroicons/react/24/solid';
 import MessagesModal from './MessagesModal';
