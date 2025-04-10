@@ -10,7 +10,6 @@ import fs from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -18,7 +17,10 @@ function wait(ms) {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function syncContacts(req, res = null) {
+  console.log('⚙️ syncContacts() called...');
   const isReady = getClientStatus();
+  console.log('🟢 Client ready?', isReady);
+
   if (!isReady) {
     const message = 'WhatsApp client is not ready';
     console.warn(message);
@@ -26,14 +28,24 @@ export async function syncContacts(req, res = null) {
     else throw new Error(message);
   }
 
+  const onlyKnown = req.query.onlyKnown === 'true';
+  const onlyNotArchived = req.query.onlyNotArchived === 'true';
+
   try {
     const db = await getDB();
     const client = getClient();
-    if (!client) throw new Error('Client instance is null');
 
-    await wait(1000); // Ensure client is stable
+    if (!client) {
+      throw new Error('Client instance is null');
+    }
 
-    // Ensure messages table exists
+    if (typeof client.getContacts !== 'function') {
+      throw new Error('Client.getContacts is not available');
+    }
+
+    console.log('📡 Client instance acquired. Waiting before fetching contacts...');
+    await wait(1000);
+
     await db.exec(`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
@@ -43,23 +55,36 @@ export async function syncContacts(req, res = null) {
       )
     `);
 
+    await db.exec('DELETE FROM messages');
+
     await db.exec('DELETE FROM contacts');
+
     const contacts = await client.getContacts();
+    console.log(`📥 ${contacts.length} contacts fetched`);
 
     for (let i = 0; i < contacts.length; i++) {
       const contact = contacts[i];
       if (!contact.isUser) continue;
 
+      if (onlyKnown && !contact.name && !contact.pushname) continue;
+
       try {
         const chat = await contact.getChat();
         if (!chat) continue;
 
+        if (onlyNotArchived && chat.archived) continue;
+
+        const previousCountRow = await db.get(
+          'SELECT COUNT(*) as count FROM messages WHERE contact_phone = ?',
+          [contact.number]
+        );
+        const previousCount = previousCountRow?.count || 0;
+
         let allMessages = [];
         let lastMessage = null;
-        const batchSize = 20;
-
-        while (allMessages.length <= 100) {
-          const options = { limit: batchSize };
+        const maxMessages = parseInt(req.query.limit) || 100;
+        while (true) {
+          const options = { limit: maxMessages };
           if (lastMessage) options.before = lastMessage;
 
           const messages = await chat.fetchMessages(options);
@@ -68,10 +93,14 @@ export async function syncContacts(req, res = null) {
           allMessages.push(...messages);
           lastMessage = messages[messages.length - 1];
 
-          if (messages.length < batchSize) break;
+          if (allMessages.length >= maxMessages) break;
         }
 
-        // Save unique messages to DB
+        // Trim excess messages if we fetched more than needed
+        if (allMessages.length > maxMessages) {
+          allMessages = allMessages.slice(0, maxMessages);
+        }
+
         for (const msg of allMessages) {
           await db.run(
             'INSERT OR IGNORE INTO messages (id, contact_phone, timestamp, body) VALUES (?, ?, ?, ?)',
@@ -79,7 +108,6 @@ export async function syncContacts(req, res = null) {
           );
         }
 
-        // Count total messages for this contact
         const result = await db.get(
           'SELECT COUNT(*) as count FROM messages WHERE contact_phone = ?',
           [contact.number]
@@ -100,21 +128,37 @@ export async function syncContacts(req, res = null) {
           ]
         );
 
+        const eta = Math.round(Math.max((chat.totalMessages - result.count) * 0.05, 1));
+
         broadcastEvent('sync-progress', {
           current: i + 1,
           total: contacts.length,
           name: contact.name || contact.pushname || contact.number,
           phone: contact.number,
+          etaSeconds: eta,
         });
+
+        console.log(`🔄 [${i + 1}/${contacts.length}] Synced: ${contact.name || contact.pushname || contact.number}`);
+
+        const newMessagesCount = result.count - previousCount;
+        if (newMessagesCount > 0) {
+          broadcastEvent('toast', {
+            type: 'success',
+            message: `📩 Found ${newMessagesCount} new message(s) for ${contact.name || contact.pushname || contact.number}`,
+          });
+        }
+
       } catch (err) {
         console.warn('⚠️ Failed contact:', contact.number, err.message);
       }
     }
 
+    broadcastEvent('sync-complete', {});
     if (res) res.json({ success: true });
+
   } catch (e) {
     console.error('❌ Failed to fetch contacts:', e.message);
-    if (res) return res.status(500).json({ error: 'Client not ready or disconnected' });
+    if (res) return res.status(500).json({ error: e.message });
   }
 }
 

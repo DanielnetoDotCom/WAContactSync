@@ -17,8 +17,7 @@ async function init() {
       name TEXT,
       phone TEXT,
       last_message_date TEXT,
-      message_count INTEGER,
-      new_messages INTEGER DEFAULT 0
+      message_count INTEGER
     );
   `);
 

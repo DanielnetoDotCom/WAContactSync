@@ -1,52 +1,12 @@
 import { useState } from 'react';
 import { PhoneIcon, ChatBubbleLeftEllipsisIcon, EyeIcon } from '@heroicons/react/24/solid';
-import axios from '../services/api';
-import Swal from 'sweetalert2';
 import MessagesModal from './MessagesModal';
 
-export default function ContactTable({ contacts, setContacts, loading }) {
+export default function ContactTable({ contacts, loading }) {
   const [sortBy, setSortBy] = useState('last_message_date');
   const [sortAsc, setSortAsc] = useState(false);
   const [search, setSearch] = useState('');
-  const [syncing, setSyncing] = useState(false);
-  const [selectedPhone, setSelectedPhone] = useState(null); // Used for modal trigger
-
-  const handleSyncMore = async () => {
-    const confirm = await Swal.fire({
-      icon: 'question',
-      title: 'Sync more messages?',
-      text: 'Do you want to resync all contacts and try fetching more messages?',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, sync again',
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      setSyncing(true);
-      await axios.post('/contacts/sync', null, { timeout: 0 });
-
-      const { data } = await axios.get('/contacts');
-      setContacts(data.contacts);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Contacts re-synced',
-        toast: true,
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error('❌ Sync failed:', err.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Sync failed',
-        text: err.message,
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const [selectedPhone, setSelectedPhone] = useState(null);
 
   if (loading) {
     return (
@@ -90,84 +50,89 @@ export default function ContactTable({ contacts, setContacts, loading }) {
   };
 
   return (
-    <div className="contacts-table mt-6 overflow-x-auto">
-      <h2 className="text-lg font-semibold mb-3">Contacts</h2>
+    <div className="contacts-table mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Contacts{' '}
+          <span className="ml-2 inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+            {filteredContacts.length} shown
+          </span>
+        </h2>
+      </div>
 
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
         <input
           type="text"
           placeholder="Search by name or phone..."
-          className="p-2 border border-gray-300 rounded w-full max-w-sm"
+          className="p-2 border border-gray-300 rounded w-full max-w-md shadow-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
-          onClick={handleSyncMore}
-          disabled={syncing}
-        >
-          🔄 Sync More Messages
-        </button>
       </div>
 
-      <table className="min-w-full border border-gray-300 rounded-md overflow-hidden shadow-sm">
-        <thead className="bg-gray-100 text-gray-700">
-          <tr>
-            <th className="text-left px-4 py-2">#</th>
-            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('name')}>
-              Name {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
-            </th>
-            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('phone')}>
-              <div className="flex items-center gap-1">
-                <PhoneIcon className="w-4 h-4 text-gray-600" />
-                Phone {sortBy === 'phone' ? (sortAsc ? '▲' : '▼') : ''}
-              </div>
-            </th>
-            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('message_count')}>
-              <div className="flex items-center gap-1">
-                <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-gray-600" />
-                Total Messages {sortBy === 'message_count' ? (sortAsc ? '▲' : '▼') : ''}
-              </div>
-            </th>
-            <th className="text-left px-4 py-2 cursor-pointer" onClick={() => handleSort('last_message_date')}>
-              Last Message {sortBy === 'last_message_date' ? (sortAsc ? '▲' : '▼') : ''}
-            </th>
-            <th className="text-left px-4 py-2">
-              <div className="flex items-center gap-1">
-                <EyeIcon className="w-4 h-4 text-gray-600" />
-                View
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedContacts.map((contact, index) => (
-            <tr key={index} className="border-t">
-              <td className="px-4 py-2">{index + 1}</td>
-              <td className="px-4 py-2">{contact.name}</td>
-              <td className="px-4 py-2">{contact.phone}</td>
-              <td className="px-4 py-2 text-center">
-                {contact.message_count >= 100 ? '100+' : contact.message_count ?? 0}
-              </td>
-              <td className="px-4 py-2">
-                {contact.last_message_date
-                  ? new Date(contact.last_message_date).toLocaleString()
-                  : '—'}
-              </td>
-              <td className="px-4 py-2">
-                <button
-                  onClick={() => setSelectedPhone(contact.phone)}
-                  className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
-                >
-                  <EyeIcon className="w-4 h-4" />
-                  View
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded shadow border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+              <th
+                className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => handleSort('name')}
+              >
+                Name {sortBy === 'name' ? (sortAsc ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => handleSort('phone')}
+              >
+                <div className="flex items-center gap-1">
+                  <PhoneIcon className="w-4 h-4 text-gray-600" /> Phone {sortBy === 'phone' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+              </th>
+              <th
+                className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => handleSort('message_count')}
+              >
+                <div className="flex items-center gap-1">
+                  <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-gray-600" /> Messages {sortBy === 'message_count' ? (sortAsc ? '▲' : '▼') : ''}
+                </div>
+              </th>
+              <th
+                className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => handleSort('last_message_date')}
+              >
+                Last Message {sortBy === 'last_message_date' ? (sortAsc ? '▲' : '▼') : ''}
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedContacts.map((contact, index) => (
+              <tr key={index}>
+                <td className="px-4 py-2 text-sm text-gray-500">{index + 1}</td>
+                <td className="px-4 py-2 text-sm text-gray-800">{contact.name}</td>
+                <td className="px-4 py-2 text-sm text-gray-800">{contact.phone}</td>
+                <td className="px-4 py-2 text-sm text-center">
+                  {contact.message_count ?? 0}
+                </td>
+                <td className="px-4 py-2 text-sm text-gray-600">
+                  {contact.last_message_date
+                    ? new Date(contact.last_message_date).toLocaleString()
+                    : '—'}
+                </td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => setSelectedPhone(contact.phone)}
+                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <EyeIcon className="w-4 h-4" /> View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {selectedPhone && (
         <MessagesModal phone={selectedPhone} onClose={() => setSelectedPhone(null)} />
