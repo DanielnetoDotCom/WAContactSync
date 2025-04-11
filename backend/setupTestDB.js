@@ -1,17 +1,25 @@
 // backend/setupTestDB.js
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import fs from 'fs/promises';
-import path from 'path';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
-const dbPath = path.resolve('database.sqlite');
-const schemaPath = path.resolve('db', 'schema.sql');
+const DB_FILE = path.resolve('db', 'contacts.test.db');
+const SCHEMA_PATH = path.resolve('db', 'schema.sql');
 
-const run = async () => {
-  const db = await open({ filename: dbPath, driver: sqlite3.Database });
-  const schema = await fs.readFile(schemaPath, 'utf-8');
+try {
+  const schema = readFileSync(SCHEMA_PATH, 'utf8');
+
+  const db = await open({
+    filename: DB_FILE,
+    driver: sqlite3.Database,
+  });
+
   await db.exec(schema);
-  console.log('🗂️ Test database initialized');
-};
+  console.log('✅ Test database created and schema applied.');
+  await db.close();
+} catch (err) {
+  console.error('❌ Error creating test database:', err);
+  process.exit(1);
+}
 
-run();
