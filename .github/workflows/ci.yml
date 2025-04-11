@@ -24,20 +24,20 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Setup SQLite test database
-        run: node setupTestDB.js
-        working-directory: backend        
-
-      ### 🔹 Backend tests
+      ### 🔹 Backend
       - name: Install backend dependencies
         run: npm install
+        working-directory: backend
+
+      - name: Setup SQLite test database
+        run: node setupTestDB.js
         working-directory: backend
 
       - name: Run backend tests
         run: npm test
         working-directory: backend
 
-      ### 🔹 Frontend tests
+      ### 🔹 Frontend
       - name: Install frontend dependencies
         run: npm install
         working-directory: frontend
