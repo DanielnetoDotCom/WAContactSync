@@ -6,6 +6,35 @@ Created by **Daniel Neto** to demonstrate a professional-grade solution with mod
 
 ---
 
+## ✅ Status & CI
+
+[![Tests](https://github.com/DanielnetoDotCom/WAContactSync/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielnetoDotCom/WAContactSync/actions/workflows/ci.yml)
+
+> Continuous Integration (CI) is powered by **GitHub Actions**, automatically running tests for each commit and pull request.
+
+### 🔬 Test Coverage
+
+- The backend is tested using **Jest**, ensuring stability and correctness of the logic.
+- Covered scenarios include:
+  - WhatsApp client lifecycle (init, teardown)
+  - API routes like `/api/contacts`, `/api/reset`, etc.
+  - Contact sync, sorting, and state reset flows
+- You can run tests locally:
+
+```bash
+npm test
+```
+
+- For test coverage report:
+
+```bash
+npm run test:coverage
+```
+
+> The coverage report shows which parts of the code are tested, helping maintain code quality as features evolve.
+
+---
+
 ## ✨ Features
 
 - 🔄 Sync WhatsApp via QR code
@@ -37,15 +66,6 @@ Created by **Daniel Neto** to demonstrate a professional-grade solution with mod
 - All processing happens **locally** on your server
 - No external services are used for contact or message data
 - Session data can be reset at any time
-
----
-
-## 📊 Message Count Explanation
-
-- The app fetches **up to 100 recent messages** per contact.
-- It counts messages stored in the WhatsApp Web session.
-- This number may **differ from what you see on your phone** because WhatsApp doesn't expose the full history via this API.
-- The **"new messages since last sync"** metric compares the last message timestamp with the time of the last sync.
 
 ---
 
