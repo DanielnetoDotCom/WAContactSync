@@ -46,15 +46,6 @@ export async function syncContacts(req, res = null) {
     console.log('📡 Client instance acquired. Waiting before fetching contacts...');
     await wait(1000);
 
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        contact_phone TEXT,
-        timestamp DATETIME,
-        body TEXT
-      )
-    `);
-
     await db.exec('DELETE FROM messages');
 
     await db.exec('DELETE FROM contacts');

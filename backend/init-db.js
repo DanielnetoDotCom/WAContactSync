@@ -11,15 +11,9 @@ async function init() {
     driver: sqlite3.Database
   });
 
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS contacts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      phone TEXT,
-      last_message_date TEXT,
-      message_count INTEGER
-    );
-  `);
+  const schemaPath = resolve(__dirname, 'db', 'schema.sql');
+  const schemaSQL = await fs.readFile(schemaPath, 'utf-8');
+  await db.exec(schemaSQL);
 
   console.log('📦 Database initialized.');
   await db.close();

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const folders = ['frontend', 'backend'];
-const extensions = ['.js', '.jsx', '.ts', '.tsx', '.cjs'];
+const extensions = ['.js', '.jsx', '.ts', '.tsx', '.cjs', '.yml', '.sql'];
 const outputFile = path.join(__dirname, 'js-files.txt');
 
 const output = [];
