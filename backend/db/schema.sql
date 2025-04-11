@@ -1,15 +1,14 @@
 CREATE TABLE IF NOT EXISTS contacts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  phone TEXT,
-  message_count INTEGER,
-  last_message_date TEXT
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    phone TEXT,
+    last_message_date TEXT,
+    message_count INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS messages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  contact_id INTEGER,
-  message TEXT,
-  timestamp TEXT,
-  FOREIGN KEY(contact_id) REFERENCES contacts(id)
+    id TEXT PRIMARY KEY,
+    contact_phone TEXT,
+    timestamp DATETIME,
+    body TEXT
 );
