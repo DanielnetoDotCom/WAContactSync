@@ -2,7 +2,7 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import path from 'path';
 
 const DB_FILE = path.resolve('db', 'contacts.test.db');
 const SCHEMA_PATH = path.resolve('db', 'schema.sql');
