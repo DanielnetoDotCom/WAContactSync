@@ -63,8 +63,9 @@ function createClient() {
     isClientReady = false;
     console.error('❌ Authentication failed:', msg);
   });
-
-  client.initialize();
+  if (process.env.NODE_ENV !== 'test') {
+    client.initialize();
+  }
   clientInstance = client;
 }
 

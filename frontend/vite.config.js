@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import process from 'process'
 
 export default defineConfig(({ mode }) => {
-  // Carregar as variáveis de ambiente corretamente
+  // Load environment variables correctly
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [
@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     server: {
       // allowedHosts: ['ticket-system.danielneto.com'],
       host: true,  
-      port: parseInt(env.VITE_PORT) || 5001, // Usando a variável carregada do .env
+      port: parseInt(env.VITE_PORT) || 5001, // Using variable loaded from .env
     },
   }
 })
